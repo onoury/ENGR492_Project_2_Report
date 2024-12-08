@@ -86,7 +86,7 @@ footer{
 .TOCLinkDiv{
     display: flex;
     position: sticky;
-    top: 2rem;
+    top: 3.5rem;
     flex-direction: column;
     gap: 0.5rem;
 }
@@ -145,10 +145,11 @@ footer{
 }
 .authors{
     align-self: flex-start;
-    font-size: 1.125rem;
+    font-size: 0.8rem;
+    padding-left: 1rem;
 }
 .authors > span{
-    padding-block: 0.7rem;
+    padding-block: 1rem;
     display: inline-block;
     padding-inline: 1rem;
     text-align: center;
@@ -186,6 +187,10 @@ hr{
         max-width: 100vw;
     }
     .reportTOC{
+        display: none;
+    }
+
+    .projectLinkBtn{
         display: none;
     }
 }
