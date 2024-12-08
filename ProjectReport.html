@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="reportStyles.css">
+    <title>Project Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs/lib/browser/math.js"></script>
+        <!-- KaTeX CSS and JS -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
+        <script defer src="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.js"></script>
+        <script defer src="https://cdn.jsdelivr.net/npm/katex/dist/contrib/auto-render.min.js"
+            onload="renderMathInElement(document.body);"
+            crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="projectReport">
+        <div class="reportTOC">
+            <div class="TOCLinkDiv">
+                <a href="#intro" class="mainTOC proxBold active">
+                    INTRODUCTION
+                </a>
+                <a href="#theStiffnessMethod" class="subTOC proxBold">
+                    The Stiffness Method
+                </a>
+                <a href="#Modeling" class="mainTOC proxBold">
+                    MODELING
+                </a>
+                <a href="#dataStructures" class="subTOC proxBold">
+                    Node and Element Calculations <br> 
+                    <span style="padding-left: 0.5rem">and implementation</span>
+                </a>
+                <a href="#genAdjMatrix" class="subTOC proxBold">
+                    The Adjacency Matrix
+                </a>
+                <a href="#genStiffMatrix" class="subTOC proxBold">
+                    The Stiffness Matrix
+                </a>
+                <a href="#genDispAndForceMatrix" class="subTOC proxBold">
+                    The Displacement <br>
+                    <span style="padding-left: 0.5rem">and Force Matrices</span>
+                </a>
+                <a href="#Solution" class="mainTOC proxBold">
+                    SOLUTION
+                </a>
+                <a href="#solvingBoundaryConditions" class="subTOC proxBold">
+                    Boundary Conditions
+                </a>
+                <a href="#partitioningAndsimplifying" class="subTOC proxBold">
+                    Partioning / Simplifying
+                </a>
+                <a href="#systemOfEquationsSolver" class="subTOC proxBold">
+                    Solving the system of equations
+                </a>
+                <a href="#solvingForElementalForces" class="subTOC proxBold">
+                    Finding Normal stresses
+                </a>
+                <a href="#Conclusion" class="mainTOC proxBold">
+                    CONCLUSION
+                </a>
+                <a href="#summary" class="subTOC proxBold">
+                    Chat-GPT Summary
+                </a>
+                <a href="#nextSteps" class="subTOC proxBold">
+                    Next Steps
+                </a>
+            </div>
+        </div>
+        <div class="reportDiv">
+            <div class="reportHeaderDiv">
+                <div class="Title-Subtitle">
+                    <p class="reportH1 proxBold">ENGR 492 Course Project # 2</p>
+                    <p class="reportSub1 adelleReg">Two-Dimensional Static Truss Analysis</p>
+                </div>
+                <p class="authors">
+                    <!-- <span>Omar Noury<br> #73735524</span> -->
+                    <!-- <span>Taymour Metwalli<br> #15770787</span> -->
+                </p>
+            </div>
+            <hr>
+            <div class="reportBodyDiv">
+                <section id="intro">
+                    <p class="reportH2 proxBold">Introduction</p>
+                    <section id="theStiffnessMethod">
+                        <br>
+                        <p class="reportH3 proxBold">The Stiffness Method</p>
+                        <p class="reportP1">
+                            The stiffness method is a systematic approach used in structural analysis to calculate nodal displacements
+                            and internal forces within a structure. It is based on the relationship between nodal forces \([F]\), nodal
+                            displacements \([u]\), and the global stiffness matrix \([K]\), expressed as:
+                            <br><br>
+                            \[
+                            [K][u] = [F]
+                            \]
+                            <br>
+                            In this equation:
+                            <br><br>
+                            \([K]\): The global stiffness matrix representing the structure's resistance to deformation.
+                            <br>
+                            \([F]\): The nodal force vector representing external forces applied to the structure.
+                            <br>
+                            \([u]\) : The nodal displacement vector containing unknown displacements at each degree of freedom.
+
+                            <br><br>
+                    
+                            By solving this system of linear equations, the nodal displacements \([u]\) are determined, which can then
+                            be used to compute internal forces and stresses in the truss elements.
+                            <br><br><br>
+                        </p>
+                    
+                        <p class="reportP1"><strong><i>Calculation of a 4x4 Stiffness Matrix - global</i></strong></p>
+                        <p class="reportP1">
+                            <br>
+                            The stiffness matrix for a truss element in a global Cartesian coordinate system accounts for the
+                            orientation of the element. This orientation is defined using the directional cosines:
+                            <br><br>
+                            \[
+                            l = \cos\theta, \quad m = \sin\theta
+                            \]
+                            <br>
+                            Here, \(l\) and \(m\) are the directional cosines corresponding to the horizontal and vertical axes,
+                            respectively, and \(\theta\) is the angle of the element with respect to the global x-axis.
+                        </p>
+                        <p class="reportP1">
+                            Using these directional cosines, the local stiffness matrix for a truss element is transformed into the
+                            global stiffness matrix. For a single truss element, the 4x4 global stiffness and displacement matrices are
+                            calculated as:
+                            <br><br>
+                            \[
+                            [K] [u]=
+                            \frac{EA}{L}
+                            \begin{bmatrix}
+                            l^2 & lm & -l^2 & -lm \\
+                            lm & m^2 & -lm & -m^2 \\
+                            -l^2 & -lm & l^2 & lm \\
+                            -lm & -m^2 & lm & m^2
+                            \end{bmatrix} \begin{bmatrix}
+                            u_{\text{ initial}} \\
+                            v_{\text{ initial}} \\
+                            u_{\text{ final}} \\
+                            v_{\text{ final}}
+                            \end{bmatrix}
+                            \]
+                            <br>
+                            In this equation:
+                        <table>
+                            <tr>
+                                <td><b>\(E\):</b></td>
+                                <td>The modulus of elasticity of the truss material.</td>
+                            </tr>
+                            <tr>
+                                <td><b>\(A\):</b></td>
+                                <td>The cross-sectional area of the truss element.</td>
+                            </tr>
+                            <tr>
+                                <td><b>\(L\):</b></td>
+                                <td>The length of the truss element.</td>
+                            </tr>
+                            <tr>
+                                <td><b>\(l, m:\) </b></td>
+                                <td>Directional cosines for the global coordinate system.</td>
+                            </tr>
+                            <tr>
+                                <td><b>\(u, v\):</b></td>
+                                <td>horizontal and vertical displacements, respectively. The subscripts \(\text{initial}\) and
+                                    \(\text{final}\) correspond to the starting and ending nodes of the specific element.</td>
+                            </tr>
+                        </table>
+                        <br>
+                        </p>
+                    
+                        <p class="reportP1">
+                            The stiffness matrix above captures the contribution of a single element in the global coordinate
+                            system. When assembling the global stiffness matrix for the entire structure, these individual matrices are
+                            added to their corresponding positions based on the nodes connected by the element.
+                            <br><br>
+                            The final global displacement matrix will have twice as many rows as there are degrees of freedom since each
+                            degree of freedom has a displacement in the x and y axis, denoted \(u,v\) respectively.
+                            Similarly, the global stiffness matrix will be a square matrix with dimensions equal to the number of rows of
+                            the displacement vector.
+                    
+                        </p>
+                        <br><br>
+                        <p class="reportP1"><strong><i>The Global Stiffness Matrix</i></strong></p>
+                        <p class="reportP1">
+                            <!-- add the content here -->
+                            <br>
+                            The stiffness matrix is a critical component of the stiffness method, used to calculate the displacements and
+                            internal forces in a truss structure. It represents the relationship between nodal displacements and forces,
+                            encapsulating the stiffness properties of all elements in the structure.
+                            <br><br>
+                            <strong><i>Construction</i></strong>
+                            <br><br>
+                    
+                            The global stiffness matrix is constructed as a square matrix, where the size is determined by twice the number
+                            of nodes in the structure (to account for two degrees of freedom per node: horizontal and vertical
+                            displacements). Each entry in the matrix is defined as follows:
+                            <br><br>
+                        <ul>
+                            <li>
+                                Diagonal entries represent the net stiffness contributions of all elements connected to a specific node.
+                            </li>
+                            <li>
+                                Off-diagonal entries represent the coupling stiffness between two nodes connected by an element.
+                            </li>
+                        </ul>
+                    
+                        <br>
+                        <br><br>
+                        </p>
+                        <div id="stiffness-matrix-container">
+                            <p>
+                                \[
+                                K =
+                                \begin{bmatrix}
+                                k_{11} & k_{12} & k_{13} & k_{14} \\
+                                k_{21} & k_{22} & k_{23} & k_{24} \\
+                                k_{31} & k_{32} & k_{33} & k_{34} \\
+                                k_{41} & k_{42} & k_{43} & k_{44}
+                                \end{bmatrix}
+                                \]
+                            </p>
+                        </div>
+                        <p class="reportP1">
+                            <strong><i>Role in Truss Analysis</i></strong>
+                            <br><br>
+                            The global stiffness matrix serves as the backbone of the truss analysis process. By coupling the nodal
+                            displacements and applied forces through the stiffness relationships, the system of equations \([K][u] = [F]\)
+                            is formed. This system is then solved to obtain the displacements \([u]\), which are subsequently used to
+                            calculate the internal stresses and reactions.
+                            <br><br>
+                            The details of solving this system and deriving additional results will be discussed in subsequent sections.
+                            <br><br>
+                            In this software, the global stiffness matrix was constructed directly by traversing the truss, node by node,
+                            and summing up the individual contributions of each each element connected to a specific node.
+                            The details on how this was done are expanded on in the <a href="#Modeling"
+                                style="text-decoration: underline; color: black;">Modeling</a> section of this report.
+                    
+                        </p>
+                    
+                    </section>
+                    </section>
+                    <section id="Modeling">
+                        <p class="reportH2 proxBold">Modeling</p>
+                        <section id="dataStructures">
+                            <p class="reportH3 proxBold">Data Structures and Coordinate Calculations</p>
+                            <p class="reportP1">
+                                The application uses JavaScript classes to define and store the properties of each node, element, force, and
+                                fixture in the truss system. This object-oriented approach allows for clean, reusable code and structured
+                                storage of data. Below is an overview of the key classes and the calculations performed.
+                                <br><br>
+                                <strong><i>Node Class</i></strong>
+                                <br><br>
+                                The <code><strong>NODE</strong></code> class is used to define the coordinates of a point in the truss
+                                system. Each node is initialized with its \(x\) and \(y\) coordinates, representing its position in the
+                                global Cartesian coordinate system. All nodes, elements, materials, and components (forces and fixtures)
+                                created are stored in arrays. Each element and node are added to their respective arrays in order so that
+                                their labels correspond to their indices in the array.
+                                <br><br>
+                            <p style="text-align: center;">Nodes are initialized as follows:
+                                <br><code><strong>new Node(x, y)</strong></code></p>
+                            <br>
+                    
+                    
+                            <strong><i>Element Class</i></strong>
+                            <br><br>
+                            The <code><strong>ELEMENT</strong></code> class represents a truss member connecting two nodes. Each element is
+                            initialized with a reference to the its initial and final node connections, denoted \(N_i\) and \(N_f\)
+                            respectively. From these nodes, the coordinates of start and end position are saved as (\(x_i, y_i, x_j, y_j\)).
+                            Moreover, elements are also initialized with a referece to a material object ( has Modulus of Elasticity \(E\)
+                            and color properties) and cross-sectional area (\(A_r\)).
+                            <br><br>
+                            <p style="text-align: center;"  id="stiffyCoefficents">Elements are initialized as follows:
+                                <br><code><strong>new Element(nodes[0],nodes[1], materials[0], Ar)</strong></code></p>
+                            <br><br>
+                            Within the <code><strong>ELEMENT</strong></code> class, calculations for various variables are computed and
+                            saved, namely;
+                            <br><br>
+                            <ul>
+                                <li><b>Length of the element:</b>
+                                    \[
+                                    L = \sqrt{(x_j - x_i)^2 + (y_j - y_i)^2}
+                                    \]
+                                </li>
+                                <li><b>Directional cosines:</b>
+                                    \[
+                                    l = \frac{x_j - x_i}{L}, \quad m = \frac{y_j - y_i}{L}
+                                    \]
+                                </li>
+                                <li><b>Stiffness matrix coefficients:</b>
+                                    <br>
+                                    These coefficients are derived to account for the element's stiffness in the global coordinate system
+                                    and to reduce computational complexity later on:
+                                    \[
+                                    a = \frac{l^2 A_r E}{L}, \quad b = \frac{lm A_r E}{L}, \quad c = \frac{m^2 A_r E}{L}
+                                    \]
+                                    <br>
+                                    The application of these coefficients is illustrated in <a href="#genStiffMatrix"
+                                        style="text-decoration: underline; color: black;">The Stiffness Matrix</a> section below
+                                </li>
+                            </ul>
+                            <br><br>
+                            <strong><i>Fixture and Force Classes</i></strong>
+                            <br><br>
+                            The <code><strong>FIXTURE</strong></code> and <code><strong>FORCE</strong></code> classes are used to define
+                            boundary conditions and external loads, respectively. Each fixture stores its angle, type (e.g., roller or
+                            fixed), and the node its located at, while each force stores its angle, magnitude, and the node its located at.
+                            <br><br>
+                            <strong><i>Initial Values</i></strong>
+                            <br><br>
+                            Nodes, elements, materials, and boundary conditions are initialized into arrays where;
+                            <br><br>
+                            <ul>
+                                <li><b>Nodes:</b> Each node is defined with its \(x\) and \(y\) coordinates, such as \( (120, 0) \).</li>
+                                <li><b>Elements:</b> Each element connects two nodes and is initialized with its material and
+                                    cross-sectional area.</li>
+                                <li><b>Materials:</b> Materials include modulus of elasticity, \(E\), and a color for visualization, with
+                                    predefined values for steel and aluminum.</li>
+                            </ul>
+                            <br>
+                            </p>
+                            <p class="reportP1">
+                                This structured approach to data storage and computation ensures that the global stiffness matrix and
+                                force-displacement relationships are computed efficiently and accurately.
+                            </p>
+                        </section>
+                    <section id="genAdjMatrix">
+                        <p class="reportH3 proxBold">The Adjacency Matrix</p>
+                        <p class="reportP1">
+                            <br>
+                            The adjacency matrix is a fundamental component in the representation and analysis of truss structures within the application. It defines the connectivity between nodes, serving as the foundation for constructing the global stiffness matrix used in the stiffness method. Each element in the adjacency matrix indicates whether a direct connection (truss element) exists between two nodes and, if so, provides a reference to the associated element's properties.
+                            <br><br>
+                            <strong><i>Implementation</i></strong>
+                            <br><br>
+                            The adjacency matrix is implemented as a square matrix, where the number of rows and columns corresponds to the number of nodes in the structure. Each entry in the matrix is defined as follows:
+                            <br><br>
+                            > A value of 0 indicates no direct connection between the corresponding nodes.
+                            <br>
+                            > A non-zero entry contains a reference to the truss element connecting the two nodes.
+                            <br><br>
+                        </p>
+                        <div id="adjacency-matrix-container">
+                            <p>
+                                \[ 
+                                \begin{bmatrix}
+                                    0 & \text{Element 1} & \text{Element 2} & 0 \\
+                                    \text{Element 1} & 0 & \text{Element 3} & \text{Element 4} \\
+                                    \text{Element 2} & \text{Element 3} & 0 & \text{Element 5} \\
+                                    0 & \text{Element 4} & \text{Element 5} & 0
+                                \end{bmatrix}
+                                \]
+                            </p>
+                        </div>
+                            <p style="text-align: center;"><strong>Figure 1: The Adjacency Matrix for the Default setup of the truss</strong></p>
+                        <p class="reportP1">
+                            <br><br>
+                            The matrix is constructed by iterating over all nodes and elements in the structure. For each element, the start (Ni) and end (Nf) nodes are identified, and the matrix is updated symmetrically to reflect the undirected nature of truss connections. This ensures that both directions of the connection are represented.
+                            <br><br>
+                            <strong><i>Role in the Stiffness Method</i></strong>
+                            <br><br>
+                            The adjacency matrix simplifies the process of assembling the global stiffness matrix. By providing a structured representation of node connections, it allows the program to efficiently determine the contributions of each element to the global stiffness matrix by providing a direct reference to the instance the specific element and the indices of the nodes it is connected to.
+                            The specifics of how the stiffness matrix is constructed from the adjacecny matrix will be expanded on in the following section. 
+                        </p>
+                    </section>
+                    <section id="genStiffMatrix">
+                        <p class="reportH3 proxBold">The Stiffness Matrix</p>
+                        <p class="reportP1">
+                            The stiffness matrix is constructed using the adjacency matrix to map the connections between nodes and their associated elements. For the default configuration, the Global Stiffness Matrix \([K]\) matrix is assembled as follows:
+                        </p>
+                        <p class="reportP1" style="transform-origin: 0% 50%; scale: 0.75; min-width: fit-content;">
+                            \[
+                            \begin{bmatrix}
+                            &a_1 + a_2 & b_1 + b_2 & |& -a_1            & -b_1             & |  & -a_2             & -b_2            & |& 0           & 0          &\\
+                            &b_1 + b_2 & c_1 + c_2 & |& -b_1            & -c_1             & |  & -b_2             & -c_2            & |& 0           & 0          &\\
+                            &--&--&--&--&--&--&--&--&--&--&--&\\
+                            &-a_1      & -b_1      & |& a_1 + a_3 + a_4 & b_1 + b_3 + b_4  & |  & -a_3             & -b_3            & |& -a_4        & -b_4       &\\
+                            &-b_1      & -c_1      & |& b_1 + b_3 + b_4 & c_1 + c_3 + c_4  & |  & -b_3             & -c_3            & |& -b_4        & -c_4       &\\
+                            &--&--&--&--&--&--&--&--&--&--&--&\\
+                            &-a_2      & -b_2      & |& -a_3            & -b_3             & |  &  a_2 + a_3 + a_5 & b_2 + b_3 + b_5 & |& -a_5        & -b_5       &\\
+                            &-b_2      & -c_2      & |& -b_3            & -c_3             & |  &  b_2 + b_3 + b_5 & c_2 + c_3 + c_5 & |& -b_5        & -c_5       &\\
+                            &--&--&--&--&--&--&--&--&--&--&--&\\
+                            &0         & 0         & |& -a_4            & -b_4             & |  & -a_5             & -b_5            & |& a_4 + a_5   & b_4 + b_5  &\\
+                            &0         & 0         & |& -b_4            & -c_4             & |  & -b_5             & -c_5            & |& b_4 + b_5   & c_4 + c_5
+                            \end{bmatrix}
+                            \]
+                         
+                          <ul style="margin-left: 1rem;">
+                            <li>Diagonal terms are computed by summing up the contributions of all elements connected to a node</li>
+                            <br>
+                            <li>Off-diagonal terms account for the interaction between connected nodes.</li>
+                          </ul>
+                          <br>
+                          <b>To illustrate :</b> Node number two is connected to three elements; 1, 3, & 4. The coefficients of those elements, \(a_i, b_i, c_i\) are summed at the diagonal 
+                          entry for node two, rows 3 & 4 and columns 3 & 4. Since we know that element 1 connects node 2 to node 1, we subtract element 1's 
+                          coefficients from rows 1 & 2 at column 3 & 4 (the off-diagonal entries for node 1 that are associated with the diagonal entry for node 2). 
+                          <br><br>Note that this matrix will always be symmetric about the diagonal. We can then simply subtract
+                          element 1's coefficints from the summetric indices, columns 1 & 2 at row 3 & 4. This process is repeated for the other elements connected from node two 
+                          to other elements, moving down the diagonal node by node.
+                          <hr> 
+                        </p>
+
+                        <p class="reportP1">
+                            This matrix captures the stiffness contributions of each element in the system and represents the global stiffness matrix in the Cartesian coordinate system.
+                            <br><br>
+                            The coefficients \(a_i , b_i, c_i\) are calculated for the elements as :
+                            
+                            \[
+                            a = \frac{l^2 A_r E}{L}, \quad b = \frac{lm A_r E}{L}, \quad c = \frac{m^2 A_r E}{L}
+                            \]
+                            <br>
+                            The global stiffness matrix of each individual element is then :
+                            \[
+                                [K_e] =
+                                \begin{bmatrix}
+                                &a & b & | & -a & -b &\\
+                                &b & c &  & -b & -c &\\
+                                &-&-&+&-&- \\
+                                &-a & -b &  & a & b &\\
+                                &-b & -c & | & b & c &
+                                \end{bmatrix}
+                                \]
+                        </p>
+                       
+                        
+                        <p class="reportP1">
+                     
+                            <br><br>
+                            The final matrix is constructed using the adjacency matrix as a guide for which two nodes are connected by which element. 
+                            For each node pair connected by a truss
+                            element, the stiffness contributions are calculated based on the element's coefficients and added to the corresponding entries in the stiffness matrix. 
+                            <br><br>
+                            Psudo-code of the original algorithm used for the stiffness matrix is presented below to better demonstrate how the final stiffness matrix was assembled:
+                            <br><br>
+                            <code>
+                            // Initialize a loop to go through each node
+                            <br>
+                            <br> <p  style="padding-left: 2rem;">FOR i = 0 to n-1:</p>
+                            <br><p style="padding-left: 3rem;">// Loop through each element at the current row of the adjacency matrix
+                            <br>
+                            <br>        FOR each connected element in AdjMatrix[i]:
+                            <br><br></p>
+                            <p style="padding-left: 6rem;">   IF element is connected (elConnected != 0):
+                            <br>                               </p>                                     
+                            <br>        <p style="padding-left: 8rem;">// Update diagonal entries of the stiffness matrix
+                            <br><br>        stiffnessMatrix[i*2][i*2]       += Round(elConnected.a)
+                            <br>        stiffnessMatrix[i*2][i*2 + 1]   += Round(elConnected.b)
+                            <br>        stiffnessMatrix[i*2 + 1][i*2]   += Round(elConnected.b)
+                            <br>        stiffnessMatrix[i*2 + 1][i*2 + 1] += Round(elConnected.c)
+                            <br>                                                                        
+                            <br>        // Update off-diagonal entries (connections to other nodes)
+                            <br><br>        stiffnessMatrix[i*2][index*2]     -= Round(elConnected.a)
+                            <br>        stiffnessMatrix[i*2][index*2 + 1] -= Round(elConnected.b)
+                            <br>        stiffnessMatrix[i*2 + 1][index*2] -= Round(elConnected.b)
+                            <br>        stiffnessMatrix[i*2 + 1][index*2 + 1] -= Round(elConnected.c)
+                            </p><br><br>        
+                            // For example: For the first row of the ADJ Matrix, if the third index has an element reference,
+                            That means the element referenced is connected from the first node to the third node. In this case, 
+                            the coefficients of that specific elemement are added to node 1's diagonal entry and 
+                            subtracted from node 3's off-diagonal entries with respect to node 1.                </code>
+                        </p>
+                    
+                    </section>
+                    <section id="genDispAndForceMatrix">
+                        <p class="reportH3 proxBold">The Displacement and Force Matrices</p>
+                        <p class="reportP1">
+                            The displacement and force matrices are key components of the stiffness method, representing the nodal
+                            displacements and forces in the global coordinate system. These matrices are directly involved in solving the
+                            system of equations:
+                            <br><br>
+                            \[
+                            [K][u] = [F]
+                            \]
+                            <br>
+                            where:
+                            <br><br>
+                        </p>
+                        <table>
+                            <tr>
+                                <td><b>\([u]\):</b></td>
+                                <td>The nodal displacement matrix containing horizontal (\(u\)) and vertical (\(v\)) displacements for each
+                                    node.</td>
+                            </tr>
+                            <tr>
+                                <td><b>\([F]\):</b></td>
+                                <td>The nodal force matrix containing the externally applied forces at each degree of freedom.</td>
+                            </tr>
+                        </table>
+                        <br>
+                        <p class="reportP1">
+                            For the default configuration with 4 nodes, the displacement matrix is structured as:
+                            <br><br>
+                            \[
+                            [u] =
+                            \begin{bmatrix}
+                            u_1 \\ v_1 \\ u_2 \\ v_2 \\ u_3 \\ v_3 \\ u_4 \\ v_4
+                            \end{bmatrix}
+                            \]
+                            <br>
+                            Here, \(u_i\) and \(v_i\) represent the horizontal and vertical displacements of node \(i\), respectively.
+                        </p>
+                        <p class="reportP1">
+                            <br>
+                            Similarly, the force matrix is structured as:
+                            <br><br>
+                            \[
+                            [F] =
+                            \begin{bmatrix}
+                            F_{x1} \\ F_{y1} \\ F_{x2} \\ F_{y2} \\ F_{x3} \\ F_{y3} \\ F_{x4} \\ F_{y4}
+                            \end{bmatrix}
+                            \]
+                            <br>
+                            where \(F_{xi}\) and \(F_{yi}\) are the external forces in the horizontal and vertical directions applied at
+                            node \(i\), respectively.
+                        </p>
+                    
+                    </section>
+                    </section>
+                    <section id="Solution">
+                        <p class="reportH2 proxBold">Solution</p>
+                        <section id="solvingBoundaryConditions">
+                            <p class="reportH3 proxBold">Boundary Conditions</p>
+                            <p class="reportP1">
+                                Boundary conditions are essential for ensuring the stiffness method produces a solvable system of equations.
+                                In the
+                                context of truss analysis, boundary conditions define the constraints applied to specific nodes, restricting
+                                their
+                                displacements in one or more directions and eliminating or defining forces.
+                                <br><br>
+                                There are three primary types of boundary conditions applied in the application:
+                                <br><br>
+                            <ul>
+                                <li>
+                                    <b>Unconstrained Nodes:</b> A node with no support and no external forces is free to move in both horizontal and vertical directions.
+                                    The Displacments reamin unknown while the reaction forces at such nodes both equal zero.
+                                    \[
+                                    u = u\ , \quad v = v
+                                    \]
+                                    \[
+                                    F_{x} = 0\ , \quad F_{y} = 0
+                                    \]
+                                </li>
+                                <li>
+                                    <b>Fixed Support:</b> A node with a fixed support has zero displacement in both horizontal (\(u\)) and
+                                    vertical
+                                    (\(v\)) directions. The reaction forces at such nodes remain unknown.
+                                    \[
+                                    u = 0\ , \quad v = 0
+                                    \]
+                                    \[
+                                    F_{x} = F_{x}\ , \quad F_{y} = F_{y}
+                                    \]
+                                </li>
+                                <li>
+                                    <b>Roller Support:</b> A node with a roller support is typically constrained in one direction
+                                    while free to move in the other direction only if the roller surface is normal to one of the global
+                                    coordinate axes. For such nodes,
+                                    displacement in the direction normal to the roller surface is zero while the other
+                                    remains as unknown.
+                                    <br><br>For a vertical roller (rolls along the y axis):
+                                    \[
+                                    u = 0, \quad v = v
+                                    \]
+                                    \[
+                                    F_{x} = F_{x}\ , \quad F_{y} = 0
+                                    \]
+                                    <br><br>For a Horizontal roller (rolls along the x axis):
+                                    \[
+                                    u = u, \quad v = 0
+                                    \]
+                                    \[
+                                    F_{x} = 0\ , \quad F_{y} = F_{y}
+                                    \]
+                    
+                    
+                                    In the case that the roller is inclined, the constraints
+                                    become more complex, requiring Multiple Point Constraints to accuratley represent the systems behaviour.
+                                    <br><hr>
+                                    <strong><i>Multiple Point Constraints (MPCs)</i></strong>
+                                    <br><br>
+                                    In truss analysis, Multiple Point Constraints (MPCs) are used to model conditions where the motion of a
+                                    node is constrained along a specific inclined direction, rather than purely along the global Cartesian
+                                    axes.
+                                    These constraints are essential for accurately capturing the structural behavior under external loads.
+                                    <br><br>
+                                    For an inclined roller, the constraint direction is defined by its orientation angle \(\theta\). Instead
+                                    of directly setting the horizontal (\(u\)) or vertical (\(v\)) displacement to zero, the constraint is
+                                    applied to a combined motion along the inclined axis. This is expressed mathematically as:
+                                    <br><br>
+                                    \[
+                                    u \cdot \cos\theta + v \cdot \sin\theta = 0
+                                    \]
+                                    <br>
+                                    Here:
+                                    <ul>
+                                        <li id="anchorConstraintEq">\(u\): The horizontal displacement of the constrained node.</li>
+                                        <li>\(v\): The vertical displacement of the constrained node.</li>
+                                        <li>\(\theta\): The angle of inclination of the roller relative to the global X-axis.</li>
+                                    </ul>
+                                    <br>
+                                    Similarly, the reaction forces at such constraints are expressed as:
+                                    <br><br>
+                                    \[
+                                    -F_{x} \cdot \sin\theta + F_{y} \cdot \cos\theta = 0
+                                    \]
+                                    </p>
+                                </li>
+                            </ul>
+                            
+                            <p class="reportP1">
+                                To incorporate MPCs into the stiffness method, the global stiffness matrix \([K]\) is modified to reflect the coupling between horizontal and vertical degrees of freedom at the constrained node. This involves:
+                                <br><br>
+                                <ul>
+                                    <li >Adding the constraint equations: <br> 
+                                        \[ u \cdot \cos\theta + v \cdot \sin\theta = 0 \quad \ \ \ \ \& \quad -F_{x} \cdot \sin\theta + F_{y} \cdot \cos\theta = 0 \]
+                                    Into the stiffness matrix directly, ensuring that the solution satisfies the inclined motion restriction.</li>
+                                </ul>
+                                <br>
+                                <strong><i>Implementation</i></strong>
+                                <br><br>
+                                In the application, the stiffness matrix, displacement vector, and force vector are modified to incorporate the constraints by introducing new rows/columns.
+                                <br><br>
+                                For the default configuration of the truss, with a inclined roller at some angle \(\theta\) at the node 3:
+                                <br><br>
+
+                                <ul>
+                                    <li> The \([K]\) matrix becomes
+                                    <br>
+                                \[
+                            \begin{bmatrix}
+                            &a_{1+2}   & b_{1+2}   & -a_1            & -b_1              & -a_2             & -b_2            & 0           & 0          &╎& 0 & 0&  \\
+                            &b_{1+2}   & c_{1+2}   & -b_1            & -c_1              & -b_2             & -c_2            & 0           & 0          &╎& 0 & 0&  \\
+                            &-a_1      & -b_1      & a_{1+3+4}       & b_{1+3+4}         & -a_3             & -b_3            & -a_4        & -b_4       &╎& 0 & 0&  \\
+                            &-b_1      & -c_1      & b_{1+3+4}       & c_{1+3+4}         & -b_3             & -c_3            & -b_4        & -c_4       &╎& 0 & 0&  \\
+                            &-a_2      & -b_2      & -a_3            & -b_3              &  a_{2+3+5}       & b_{2+3+5}       & -a_5        & -b_5       &╎& -1 & 0&  \\
+                            &-b_2      & -c_2      & -b_3            & -c_3              &  b_{2+3+5}       & c_{2+3+5}       & -b_5        & -c_5       &╎& 0 & -1&  \\
+                            &0         & 0         & -a_4            & -b_4              & -a_5             & -b_5            & a_{4+5}     & b_{4+5}    &╎& 0 & 0&  \\
+                            &0         & 0         & -b_4            & -c_4              & -b_5             & -c_5            & b_{4+5}     & c_{4+5}    &╎& 0 & 0 &  \\
+                            &╌╌        &╌╌         &╌╌               &╌╌                 &╌╌                &╌╌               &╌╌           &╌╌          &✛&  &   & \\
+                            &0        &0         &0               &0                 & \cos\theta                & \sin\theta               &0           &0& & 0 & 0&  \\
+                            &0        &0         &0               &0                 &0                &0               &0           &0                & & -\sin\theta & \cos\theta &  \\
+                            \end{bmatrix}
+                            \]
+                            <br>
+                            <ul>
+                                <li>The Two additional columns correspond to \(F_{x3}\) & \(F_{y3}\) respectively</li>
+                                <li>The unknown forces in the force vector, \(F_{x3}\) & \(F_{y3}\) , are moved to the stiffness matrix (thus set to zero in the force vector)</li>
+                                <li>Since the matrix already has columns corresponding to \(u_{3}\) & \(v_{3}\), the first constraint equation can be added directly as a new row</li>
+                                <li>The second constraint equation can then be added as another row where the entries correspond to the two new columns</li>
+                            </ul>
+                            <br>
+
+                        </li>
+                            <li> The \([u]\) & \([F]\) vectors become:
+                            <br>
+                            \[
+                                [u]=
+                                \begin{bmatrix}
+                                u_{\text{1}} \\
+                                v_{\text{1}} \\
+                                u_{\text{2}} \\
+                                v_{\text{2}} \\
+                                u_{\text{3}} \\
+                                v_{\text{3}} \\
+                                u_{\text{4}} \\
+                                v_{\text{4}} \\
+                                \end{bmatrix}
+                                =>
+                                \begin{bmatrix}
+                                u_{\text{1}} \\
+                                v_{\text{1}} \\
+                                u_{\text{2}} \\
+                                v_{\text{2}} \\
+                                u_{\text{3}} \\
+                                v_{\text{3}} \\
+                                u_{\text{4}} \\
+                                v_{\text{4}} \\
+                                --\\
+                                F_{\text{x3}} \\
+                                F_{\text{y3}} 
+                                \end{bmatrix}
+                                \quad
+                                \quad
+                                [F]=
+                                \begin{bmatrix}
+                                F_{\text{x1}} \\
+                                F_{\text{y1}} \\
+                                F_{\text{x2}} \\
+                                F_{\text{y2}} \\
+                                F_{\text{x3}} \\
+                                F_{\text{y3}} \\
+                                F_{\text{x4}} \\
+                                F_{\text{y4}}
+                                \end{bmatrix}
+                                =>
+                                \begin{bmatrix}
+                                F_{\text{x1}} \\
+                                F_{\text{y1}} \\
+                                F_{\text{x2}} \\
+                                F_{\text{y2}} \\
+                                0 \\
+                                0 \\
+                                F_{\text{x4}} \\
+                                F_{\text{y4}} \\
+                                --\\
+                                0 \\
+                                0 \\
+                                \end{bmatrix}
+                            \]
+                            <br>
+                            <ul>
+                                <li>Two additional rows in the displacement vector, \(F_{x3}\) & \(F_{y3}\), respectively </li>
+                                <li>The unknown forces in the force vector, \(F_{x3}\) & \(F_{y3}\) , are moved to the stiffness matrix (thus set to zero in the force vector)</li>
+                                <li>Two additional \(0\) rows in the Force vector correspond to the RHS of the <a href="#anchorConstraintEq" style="color:black">constraint equations</a></li>
+
+                            </ul>
+
+                            </li>
+                                </ul>
+                            </p>
+
+                        <hr>
+                        <p class="reportP1">
+                            Finally, known reaction forces and displacements defined by fixed supports and unconstrained nodes are substituted 
+                            into the force and displacements vectors. Additionally, Extrnal forces defined by the user are split into their x and y components
+                            then subsitiuted into the force vector.
+                            <br><br>
+                            For the default configuration of the truss, the \([u]\) & \([F]\) vectors become:
+                            <br><br>
+                            \[
+                                [u]=
+                                \begin{bmatrix}
+                                u_{\text{1}} \\
+                                v_{\text{1}} \\
+                                u_{\text{2}} \\
+                                v_{\text{2}} \\
+                                u_{\text{3}} \\
+                                v_{\text{3}} \\
+                                0 \\
+                                0 \\
+                                F_{\text{x3}} \\
+                                F_{\text{y3}} 
+                                \end{bmatrix}
+                                \quad
+                                \quad
+                                [F]=
+                                \begin{bmatrix}
+                                F_{\text{ext-x}} \\
+                                F_{\text{ext-y}} \\
+                                0 \\
+                                0 \\
+                                0 \\
+                                0 \\
+                                F_{\text{x4}} \\
+                                F_{\text{y4}} \\
+                                0 \\
+                                0 \\
+                                \end{bmatrix}
+                            \]
+
+                            The substitutions here correspond to:
+                            <br><br>
+                            <ul>
+                                <li>Node 1 is unconstrained but it has an extrenal force acting on it with magnitudes; \(F_{\text{ext-x}}\) & \(F_{\text{ext-y}}\) in the x and y axis.</li>
+                                <li>Node 2 is unconstrained and has no extrenal forces acting on it.</li>
+                                <li>Node 4 is fixed, it is has a net displacement of zero. </li>
+                            </ul>
+
+                        </p>
+                        </section>
+                        <section id="partitioningAndsimplifying">
+                            <p class="reportH3 proxBold"> Partioning / Simplifying</p>
+                            <p class="reportP1">
+                                The process of partitioning and simplifying is a critical step in preparing to solve the system of equations. 
+                                This step directly follows imposing the boundary conditions. partioning involves reducing the size of the system by 
+                                removing and holding onto the rows and columns that correspond to unknown reaction forces so that the unknown displacments
+                                can be solved for first. Simplifying involves removing the rows and columns associated with known displacements.
+                            <br><br>
+                            After implementing boundary conditions, the resulting system of equations often includes rows and columns
+                            corresponding to zero displacements. These rows and columns do not contribute to the solution of the unknown
+                            displacements and can be safely removed to simplify the system.
+                            </p>
+                            <p class="reportP1">
+                                <br>
+                                The simplification process involves:
+                                <br>
+                            <ul>
+                                <li>Identifying rows and columns in the stiffness matrix \([K]\) associated with constrained degrees of freedom
+                                    (\(u_i = 0, v_i = 0\)).</li>
+                                <li>Removing these rows and columns from \([K]\), resulting in a reduced stiffness matrix \([K_r]\).</li>
+                                <li>Removing the corresponding entries in the displacement matrix \([u]\) and force matrix \([F]\), yielding
+                                    reduced matrices \([u_r]\) and \([F_r]\).</li>
+                            </ul>
+                            </p>
+                            <p class="reportP1">
+                                <br>
+                                The partioning process involves:
+                                <br>
+                            <ul>
+                                <li>Identifying rows and columns in the stiffness matrix \([K]\) associated unknown Forces
+                                    (\(F_x , F_y\)).</li>
+                                <li>Removing these rows and columns from \([K]\) and holding onto them, resulting in a reduced stiffness matrix \([K_r]\).</li>
+                                <li>Removing the corresponding entries in the displacement matrix \([u]\) and force matrix \([F]\), yielding
+                                    reduced matrices \([u_r]\) and \([F_r]\).</li>
+                                <li>After the reduced system is solved for displacements, the equations removed from this matrix are then solved for the unknown forces</li>
+                            </ul>
+                            <br>
+                            For example: In the default truss configuration, Node 4 has a fixed constrained (\(u_4 = 0 , v_4 = 0\)):
+                            <br>
+                            <ul>
+                                <li>The rows and columns corresponding to \(u_4\) & \(v_4\) are removed from \([K]\).</li>
+                                <li>The entries for \(u_4\) & \(v_4\) are removed from \([u]\) and \([F]\).</li>
+                            </ul>
+                            </p>
+                            <p class="reportP1">
+                                <br>
+                                This approach results in a reduced system of equations:
+                                <br><br>
+                                \[
+                                [K_r][u_r] = [F_r]
+                                \]
+                                \[
+                                \begin{bmatrix}
+                                &a_{1+2}   & b_{1+2}  & -a_1            & -b_1              & -a_2             & -b_2              & 0 & 0&  \\
+                                &b_{1+2}   & c_{1+2}  & -b_1            & -c_1              & -b_2             & -c_2              & 0 & 0&  \\
+                                &-a_1      & -b_1     & a_{1+3+4}       & b_{1+3+4}         & -a_3             & -b_3              & 0 & 0&  \\
+                                &-b_1      & -c_1     & b_{1+3+4}       & c_{1+3+4}         & -b_3             & -c_3              & 0 & 0&  \\
+                                &-a_2      & -b_2     & -a_3            & -b_3              &  a_{2+3+5}       & b_{2+3+5}         & -1& 0&  \\
+                                &-b_2      & -c_2     & -b_3            & -c_3              &  b_{2+3+5}       & c_{2+3+5}         & 0 & -1&  \\
+                                &0         &0         &0                &0                  & \cos\theta       & \sin\theta        &  0 & 0&  \\
+                                &0         &0         &0                &0                  & 0                &0                  & -\sin\theta &  \cos\theta &  \\
+                                \end{bmatrix}
+                                \begin{bmatrix}
+                                u_{\text{1}} \\
+                                v_{\text{1}} \\
+                                u_{\text{2}} \\
+                                v_{\text{2}} \\
+                                u_{\text{3}} \\
+                                v_{\text{3}} \\
+                                F_{\text{x3}} \\
+                                F_{\text{y3}} 
+                                \end{bmatrix}
+                                =
+                                \begin{bmatrix}
+                                F_{\text{ext-x}} \\
+                                F_{\text{ext-y}} \\
+                                0 \\
+                                0 \\
+                                0 \\
+                                0 \\
+                                0 \\
+                                0 \\
+                                \end{bmatrix}
+                                \]
+                                <br>
+                                This system contains only the unknown displacements. By simplifying the matrix system in this way,
+                                computation is greatly simplified.
+                            </p>
+                        </section>
+                        <section id="systemOfEquationsSolver">
+                            <p class="reportH3 proxBold">Solving the system of equations</p>
+                            <!-- add content here -->
+                            <p class="reportP1">
+                                To solve for the unknown displacements in the system, the LU decomposition method was utilized. LU decomposition is an efficient numerical technique that factors the global stiffness matrix \([K_r]\) into a lower triangular matrix \([L]\) and an upper triangular matrix \([U]\), such that:
+                                <br><br>
+                                \[
+                                [K_r] = [L][U]
+                                \]
+                                <br>
+                                This decomposition allows the system of equations:
+                                <br><br>
+                                \[
+                                [K_r][u_r] = [F_r]
+                                \]
+                                <br>
+                                to be solved in two steps:
+                                <br><br>
+                                <ul>
+                                    <li><b>Forward Substitution:</b> Solve \([L][z] = [F_r]\) for the intermediate vector \([z]\).</li>
+                                    <li><b>Backward Substitution:</b> Solve \([U][u_r] = [z]\) for the reduced displacement vector \([u_r]\).</li>
+                                </ul>
+                                <br>
+                            </p>
+                            <p class="reportP1">
+                                Once the unknown displacements \([u_r]\) were determined, they were integrated with the known displacements (from boundary conditions) to reconstruct the full displacement vector \([u]\). This vector represents the horizontal and vertical displacements for all nodes in the system.
+                            </p>
+                            <p class="reportP1">
+                                After obtaining the displacement vector, the unknown reaction forces at constrained nodes were calculated by substituting \([u]\) back into the original stiffness equation:
+                                <br><br>
+                                \[
+                                [F] = [K][u]
+                                \]
+                                <br>
+                                This step allowed for the determination of reaction forces at fixed supports.
+                                <br><br>
+                                The use of LU decomposition in this process not only ensured computational efficiency but also provided a structured approach to solving the system of equations, accommodating the modifications made during partitioning and simplification.
+                                <br><br>
+                                In the application, LU decomposition was implemented by the math.js library. An alternative method to solve for the \([u_r]\) matrix involved multiplying the inverse of the reduced stiffness matrix by the force matrix, hovever, due to the computational complexity involved
+                                with inverting such a large matrix, the LU decomposition method was chosen to maintain good preformance. 
+                            </p>
+                    </section>
+                    <section id="solvingForElementalForces">
+                        <p class="reportH3 proxBold">Finding Element Displacement, Strain, Stress, and Force</p>
+                        <p class="reportP1">
+                            After solving for the nodal displacements, the next step is to compute key quantities for each truss element: element displacement, strain, normal stress, and internal force. These calculations are critical for assessing the structural behavior of the truss under applied loads.
+                        <br><br><br>
+                            <strong>1. Element Displacement</strong>
+                            <br><br>
+                            The relative displacement between the nodes of each element is computed as:
+                            <br><br>
+                            \[
+                            \delta = u_j - u_i
+                            \]
+                            where \(u_i\) and \(u_j\) are the axial displacements of the initial and final nodes, respectively. This value captures the total deformation along the length of the element.
+                            <br><br><br>
+                            <strong>2. Strain</strong>
+                            <br><br>
+                            The strain in each element is calculated using its relative displacement and length:
+                            <br><br>
+                            \[
+                            \varepsilon = \frac{\delta}{L}
+                            \]
+                            where \(L\) is the original length of the element. Strain is a unitless measure of deformation relative to the element’s original length.
+                            <br><br><br>
+                            <strong>3. Normal Stress</strong>
+                            <br><br>
+                            The normal stress in each element is determined using Hooke's Law:
+                            <br><br>
+                            \[
+                            \sigma = E \cdot \varepsilon
+                            \]
+                            where \(E\) is the modulus of elasticity of the material. Normal stress is expressed in psi (pounds per square inch) and indicates whether the element is in tension (\(\sigma > 0\)) or compression (\(\sigma < 0\)).
+                            <br><br><br>
+                            <strong>4. Internal Force</strong>
+                            <br><br>
+                            The internal axial force in the element is derived using the normal stress and cross-sectional area:
+                            <br><br>
+                            \[
+                            F = \sigma \cdot A
+                            \]
+                            where \(A\) is the cross-sectional area of the element. The force is expressed in pounds-force (lbf) and represents the axial load carried by the element.
+                            <br><br>
+                            </p>
+                       
+                        <p class="reportP1">
+                            These calculations allow for the evaluation of structural performance, identifying elements under significant tension or compression and ensuring that all elements remain within their allowable stress limits.
+                        </p>
+                    </section>
+                </section>
+                <section id="Conclusion">
+                    <p class="reportH2 proxBold">Conclusion</p>
+                    <section id="summary">
+                        <p class="reportH3 proxBold">Chat-GPT Summary</p>
+                    <p class="reportP1">
+                        This project successfully demonstrated the implementation of the stiffness method for the structural analysis of truss systems using a web-based application. By integrating key engineering concepts such as the adjacency matrix, stiffness matrix, and boundary condition handling, the application efficiently calculated nodal displacements, internal forces, and stresses for a given truss configuration.
+                    </p><br>
+                    <p class="reportP1">
+                        The application utilizes JavaScript classes and modular programming to handle data structures representing nodes, elements, and boundary conditions. Through LU decomposition, the system of equations was solved efficiently, and the results were systematically used to compute secondary parameters such as element displacements, strains, stresses, and internal forces. The visual output, combined with tabular results, provides a comprehensive understanding of the truss's structural behavior.
+                    </p><br>
+                    <p class="reportP1">
+                        The accuracy and scalability of the application make it a versatile tool for structural analysis. It is particularly valuable for educational purposes, helping students and engineers visualize and understand the stiffness method and its application to real-world structures.
+                    </p>
+                    </section>
+                    <section id="nextSteps">
+                        <p class="reportH3 proxBold">Next Steps</p>
+                        <p class="reportP1">
+                            <ul>
+                                <li>
+                                    Implement the solution for external forces applied at inclined rollers
+                                </li>
+                                <li>
+                                    Expand the scope of the application to model and solve three dimensional truss systems
+                                </li>
+                                <li>
+                                    Update the materials array to provide a variety of materials with different properties
+                                    <ul><li> Note: The application currently handls adding new materials</li></ul>
+                                </li>
+                                <li>
+                                    Improve the GUI by adding an interactive way to add nodes and elements
+                                </li>
+                            </ul>
+                        </p>
+                    </section>
+                </section>
+            </div>
+        </div>
+    </div>
+    <footer>
+        <p style="text-align: center;"> Thank you for listening<br><br>
+        Please note that I wrote all the code for the project myself from scratch <br><br>
+        That is for both the truss analysis tool and the code for this report/webpage</p>
+    </footer>
+</body>
+<script type="module" src="reportScript.js"></script>
+</html>
